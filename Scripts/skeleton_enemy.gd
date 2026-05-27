@@ -1,4 +1,4 @@
-extends CharacterBody3D
+extends "res://Scripts/character_base.gd"
 
 ## SkeletonEnemy — Simple state-machine enemy AI
 ## States: IDLE → PATROL → CHASE → ATTACK → DEAD
@@ -7,7 +7,6 @@ extends CharacterBody3D
 
 # ── Stats ──────────────────────────────────────────────────────────────────────
 @export_group("Stats")
-@export var max_health: float = 60.0
 @export var move_speed: float = 2.5
 @export var chase_speed: float = 4.0
 @export var attack_damage: float = 3.0
@@ -21,7 +20,6 @@ enum State { IDLE, PATROL, CHASE, ATTACK, DEAD }
 var _state: State = State.IDLE
 
 # ── Runtime ────────────────────────────────────────────────────────────────────
-var _health: float
 var _player: CharacterBody3D = null
 var _patrol_target: Vector3
 var _patrol_origin: Vector3
@@ -34,18 +32,10 @@ var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 # ── Node References ────────────────────────────────────────────────────────────
 @onready var detection_area: Area3D = $DetectionZone
 
-# Resolved dynamically in _ready — GLB import path varies
-var anim_player: AnimationPlayer = null
-var _anim_names: Dictionary = {}
-var _current_anim: String = ""
-
-# ── Signals ────────────────────────────────────────────────────────────────────
-signal died(enemy: Node3D)
-
 # ──────────────────────────────────────────────────────────────────────────────
 func _ready() -> void:
+	super()
 	add_to_group("Enemy")
-	_health = max_health
 	_patrol_origin = global_position
 	
 	hp_label = Label3D.new()
@@ -69,58 +59,17 @@ func _ready() -> void:
 
 	if anim_player:
 		print("[Skeleton] AnimationPlayer found at: ", anim_player.get_path())
-		_load_external_animations()
-		_discover_animations()
+		var paths: Array[String] = [
+			"res://Assets/KayKit_Skeletons_1.1_FREE/animations/gltf/Rig_Medium/Rig_Medium_General.glb",
+			"res://Assets/KayKit_Skeletons_1.1_FREE/animations/gltf/Rig_Medium/Rig_Medium_MovementBasic.glb"
+		]
+		_load_external_animations(paths)
+		_discover_animations(["Idle", "Walk", "Run", "Attack", "Death", "Hit"])
 	else:
 		push_warning("[Skeleton] No AnimationPlayer found — anims disabled.")
 
-func _load_external_animations() -> void:
-	if not anim_player:
-		return
-	var anim_paths: Array[String] = [
-		"res://Assets/KayKit_Skeletons_1.1_FREE/animations/gltf/Rig_Medium/Rig_Medium_General.glb",
-		"res://Assets/KayKit_Skeletons_1.1_FREE/animations/gltf/Rig_Medium/Rig_Medium_MovementBasic.glb"
-	]
-	var lib_idx: int = 0
-	for path in anim_paths:
-		if ResourceLoader.exists(path):
-			var scene: PackedScene = load(path)
-			if scene:
-				var instance: Node = scene.instantiate()
-				var ext_player: AnimationPlayer = _find_anim_player(instance)
-				if ext_player:
-					var lib: AnimationLibrary = ext_player.get_animation_library("")
-					if lib:
-						anim_player.add_animation_library("ext_%d" % lib_idx, lib)
-						lib_idx += 1
-				instance.queue_free()
-
-	_set_anim("Idle")
+	_play_anim("Idle")
 	print("[Skeleton] Ready at %s" % str(global_position))
-
-
-func _find_anim_player(root: Node) -> AnimationPlayer:
-	if root is AnimationPlayer:
-		return root as AnimationPlayer
-	for child in root.get_children():
-		var result: AnimationPlayer = _find_anim_player(child)
-		if result:
-			return result
-	return null
-
-
-func _discover_animations() -> void:
-	if not anim_player:
-		return
-	var anim_list: PackedStringArray = anim_player.get_animation_list()
-	var wanted: Array[String] = ["Idle", "Walk", "Run", "Attack", "Death", "Hit"]
-	for w: String in wanted:
-		var wl: String = w.to_lower()
-		for a: String in anim_list:
-			if a.to_lower().contains(wl):
-				_anim_names[wl] = a
-				break
-	print("[Skeleton] Discovered anims: ", _anim_names)
 
 
 func _physics_process(delta: float) -> void:
@@ -220,7 +169,7 @@ func _move_toward(target: Vector3, spd: float, delta: float) -> void:
 
 func _do_attack() -> void:
 	_attack_timer = attack_cooldown
-	_set_anim("Attack", true)
+	_play_anim("Attack", true)
 	# Delay damage by 0.4s to align with swing
 	get_tree().create_timer(0.4).timeout.connect(func():
 		if _state == State.ATTACK and _player and is_instance_valid(_player):
@@ -230,24 +179,18 @@ func _do_attack() -> void:
 				print("[Skeleton] HIT player for %d" % int(attack_damage))
 	)
 
-
-func take_damage(amount: float) -> void:
+func _on_take_damage(amount: float) -> void:
 	if _state == State.DEAD:
 		return
-	_health -= amount
 	hp_label.text = "HP: %d/%d" % [max(0, int(_health)), int(max_health)]
-	print("[Skeleton] Took %d dmg → %d / %d HP" % [int(amount), int(_health), int(max_health)])
 	_change_state(State.CHASE)
-	if _health <= 0.0:
-		_die()
-
 
 func _die() -> void:
+	super()
 	_change_state(State.DEAD)
 	hp_label.visible = false
 	print("[Skeleton] Defeated!")
-	emit_signal("died", self)
-	_set_anim("Death", true)
+	_play_anim("Death", true)
 	await get_tree().create_timer(2.2).timeout
 	queue_free()
 
@@ -258,11 +201,11 @@ func _change_state(new_state: State) -> void:
 		return
 	_state = new_state
 	match new_state:
-		State.IDLE:   _set_anim("Idle")
-		State.PATROL: _set_anim("Walk")
-		State.CHASE:  _set_anim("Run")
+		State.IDLE:   _play_anim("Idle")
+		State.PATROL: _play_anim("Walk")
+		State.CHASE:  _play_anim("Run")
 		State.ATTACK: pass  # set in _do_attack with restart
-		State.DEAD:   _set_anim("Death", true)
+		State.DEAD:   _play_anim("Death", true)
 
 
 func _pick_patrol_target() -> void:
@@ -281,25 +224,3 @@ func _on_body_entered(body: Node3D) -> void:
 
 func _on_body_exited(body: Node3D) -> void:
 	pass  # keep chasing outside detection radius (handled in tick_chase)
-
-
-# ── Animation Helper ───────────────────────────────────────────────────────────
-func _set_anim(short_name: String, restart: bool = false) -> void:
-	if not anim_player:
-		return
-	var key: String = short_name.to_lower()
-	var full: String = _anim_names.get(key, "")
-	if full == "":
-		# Direct fallback
-		if anim_player.has_animation(short_name):
-			full = short_name
-		else:
-			return
-	if _current_anim == full and not restart:
-		return
-	_current_anim = full
-	if restart:
-		anim_player.stop()
-		anim_player.play(full, 0.2)
-	else:
-		anim_player.play(full, 0.2)

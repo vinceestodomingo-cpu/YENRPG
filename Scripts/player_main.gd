@@ -1,4 +1,4 @@
-extends CharacterBody3D
+extends "res://Scripts/character_base.gd"
 
 ## Player Controller — KayKit Adventurers (Knight)
 ## WASD = move, Space = jump, LMB = attack, E = interact, Esc = cursor toggle
@@ -19,7 +19,6 @@ extends CharacterBody3D
 @export var max_pitch: float = 35.0
 
 @export_group("Combat")
-@export var max_health: float = 100.0
 @export var max_stamina: float = 100.0
 @export var attack_damage: float = 50.0
 @export var attack_range: float = 2.2
@@ -33,7 +32,6 @@ extends CharacterBody3D
 enum PlayerState { IDLE, WALK, RUN, JUMP, ATTACK, HURT, DEAD }
 var _state: PlayerState = PlayerState.IDLE
 
-var _health: float
 var _stamina: float
 var _yaw: float = 0.0
 var _pitch: float = -18.0
@@ -46,9 +44,7 @@ var _combo_timer: float = 0.0
 
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
-# ── Anim tracking ──────────────────────────────────────────────────────────────
-var _current_anim: String = ""
-var _anim_names: Dictionary = {}  # mapped short names → full names found in AnimationPlayer
+# ── Anim tracking (handled by CharacterBase) ───────────────────────────────────
 
 # ── Node refs ──────────────────────────────────────────────────────────────────
 @onready var camera_pivot: Node3D = $CameraPivot
@@ -64,8 +60,7 @@ var _anim_names: Dictionary = {}  # mapped short names → full names found in A
 @onready var swing_sound: AudioStreamPlayer3D = $SwingSound
 @onready var hit_sound: AudioStreamPlayer3D = $HitSound
 
-# AnimationPlayer resolved dynamically in _ready (GLB path varies by import)
-var anim_player: AnimationPlayer = null
+# AnimationPlayer resolved dynamically in CharacterBase
 
 # ── Signals ────────────────────────────────────────────────────────────────────
 signal health_changed(current: float, max_val: float)
@@ -74,8 +69,8 @@ signal player_died
 
 # ──────────────────────────────────────────────────────────────────────────────
 func _ready() -> void:
+	super()
 	add_to_group("Player")
-	_health = max_health
 	_stamina = max_stamina
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	spring_arm.spring_length = camera_distance
@@ -95,87 +90,15 @@ func _ready() -> void:
 	if not anim_player:
 		print("[Player] WARNING: No AnimationPlayer found in ModelRoot")
 	else:
-		_load_external_animations()
-		_discover_animations()
+		var paths: Array[String] = [
+			"res://Assets/KayKit_Adventurers_2.0_FREE/Animations/gltf/Rig_Medium/Rig_Medium_General.glb",
+			"res://Assets/KayKit_Adventurers_2.0_FREE/Animations/gltf/Rig_Medium/Rig_Medium_MovementBasic.glb"
+		]
+		_load_external_animations(paths)
+		_discover_animations(["Idle", "Walk", "Run", "Attack", "Sword_Attack", "Death", "Hit", "Jump"])
 	_play_anim("Idle")
 
-
-func _load_external_animations() -> void:
-	if not anim_player:
-		return
-	var anim_paths: Array[String] = [
-		"res://Assets/KayKit_Adventurers_2.0_FREE/Animations/gltf/Rig_Medium/Rig_Medium_General.glb",
-		"res://Assets/KayKit_Adventurers_2.0_FREE/Animations/gltf/Rig_Medium/Rig_Medium_MovementBasic.glb"
-	]
-	var lib_idx: int = 0
-	for path in anim_paths:
-		if ResourceLoader.exists(path):
-			var scene: PackedScene = load(path)
-			if scene:
-				var instance: Node = scene.instantiate()
-				var ext_player: AnimationPlayer = _find_anim_player(instance)
-				if ext_player:
-					var lib: AnimationLibrary = ext_player.get_animation_library("")
-					if lib:
-						anim_player.add_animation_library("ext_%d" % lib_idx, lib)
-						lib_idx += 1
-				instance.queue_free()
-
-
-func _find_anim_player(root: Node) -> AnimationPlayer:
-	if root is AnimationPlayer:
-		return root as AnimationPlayer
-	for child in root.get_children():
-		var result: AnimationPlayer = _find_anim_player(child)
-		if result:
-			return result
-	return null
-
-
-func _discover_animations() -> void:
-	if not anim_player:
-		return
-	var anim_list: PackedStringArray = anim_player.get_animation_list()
-	var wanted: Array[String] = ["Idle", "Walk", "Run", "Attack", "Death", "Hit"]
-	for w: String in wanted:
-		var wl: String = w.to_lower()
-		for a: String in anim_list:
-			if a.to_lower().contains(wl):
-				_anim_names[wl] = a
-				break
-		# Fallback: exact match first chars
-		if not _anim_names.has(wl):
-			for a: String in anim_list:
-				if a.to_lower().begins_with(wl):
-					_anim_names[wl] = a
-					break
-	# Hard fallback: if attack not found, map to first available
-	if not _anim_names.has("attack") and anim_list.size() > 0:
-		_anim_names["attack"] = anim_list[0]
-	print("[Player] Discovered animations: ", _anim_names)
-
-
-func _play_anim(short_name: String, restart: bool = false) -> void:
-	if not is_instance_valid(anim_player):
-		return
-	var key: String = short_name.to_lower()
-	var full: String = _anim_names.get(key, "")
-	if full == "":
-		# Try direct
-		if anim_player.has_animation(short_name):
-			full = short_name
-		else:
-			return
-	if _current_anim == full and not restart:
-		return
-	_current_anim = full
-	if restart:
-		anim_player.stop()
-		anim_player.play(full, 0.2)
-	else:
-		anim_player.play(full, 0.2)
-
-
+# (Animation functions moved to CharacterBase)
 # ── Input ──────────────────────────────────────────────────────────────────────
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -363,24 +286,22 @@ func _show_hit_label(text: String) -> void:
 	hit_label.visible = true
 
 
-func take_damage(amount: float) -> void:
+func _on_take_damage(amount: float) -> void:
 	if _is_dead:
 		return
-	_health = max(0.0, _health - amount)
+	_health = max(0.0, _health)
 	health_bar.value = _health
 	emit_signal("health_changed", _health, max_health)
 	damage_flash.modulate.a = 0.7
 	_hurt_timer = 0.4
 	if _state != PlayerState.ATTACK:
 		_set_state(PlayerState.HURT)
-	print("[Player] Took %d dmg → %d / %d HP" % [int(amount), int(_health), int(max_health)])
-	if _health <= 0.0:
-		_die()
 
 
 func _die() -> void:
 	if _is_dead:
 		return
+	super()
 	_is_dead = true
 	_set_state(PlayerState.DEAD)
 	emit_signal("player_died")
