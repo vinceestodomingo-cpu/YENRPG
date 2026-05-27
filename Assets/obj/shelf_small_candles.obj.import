@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://810doa4p0tol"
+path="res://.godot/imported/shelf_small_candles.obj-c7f0945ecc96b40c394e21174219ca78.mesh"
+
+[deps]
+
+files=["res://.godot/imported/shelf_small_candles.obj-c7f0945ecc96b40c394e21174219ca78.mesh"]
+
+source_file="res://Assets/obj/shelf_small_candles.obj"
+dest_files=["res://.godot/imported/shelf_small_candles.obj-c7f0945ecc96b40c394e21174219ca78.mesh", "res://.godot/imported/shelf_small_candles.obj-c7f0945ecc96b40c394e21174219ca78.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

@@ -1,0 +1,56 @@
+; Player Scene — KayKit Knight
+; CharacterBody3D with Knight.glb model, camera rig, and HUD
+
+[gd_scene format=3 uid="uid://player_knight_001"]
+
+[ext_resource type="PackedScene" path="res://Assets/KayKit_Adventurers_2.0_FREE/Characters/gltf/Knight.glb" id="1_knight"]
+[ext_resource type="Script" path="res://Scripts/player_main.gd" id="2_player_script"]
+[ext_resource type="PackedScene" path="res://Scene/hud.tscn" id="3_hud"]
+[ext_resource type="AudioStream" path="res://Assets/Sounds/swing.wav" id="4_swing"]
+[ext_resource type="AudioStream" path="res://Assets/Sounds/hit.wav" id="5_hit"]
+
+; Physics shapes
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
+radius = 0.35
+height = 1.75
+
+; ── Scene Tree ────────────────────────────────────────────────────────────────
+[node name="Player" type="CharacterBody3D"]
+script = ExtResource("2_player_script")
+collision_layer = 1
+collision_mask = 3
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1,0,0, 0,1,0, 0,0,1, 0,0.875,0)
+shape = SubResource("CapsuleShape3D_player")
+
+; Model root — separated so we can rotate the model independently from the physics body
+[node name="ModelRoot" type="Node3D" parent="."]
+transform = Transform3D(1,0,0, 0,1,0, 0,0,1, 0,0,0)
+
+[node name="Knight" parent="ModelRoot" instance=ExtResource("1_knight")]
+transform = Transform3D(1,0,0, 0,1,0, 0,0,1, 0,0,0)
+
+; Camera rig
+[node name="CameraPivot" type="Node3D" parent="."]
+transform = Transform3D(1,0,0, 0,1,0, 0,0,1, 0,1.1,0)
+
+[node name="SpringArm3D" type="SpringArm3D" parent="CameraPivot"]
+transform = Transform3D(1,0,0, 0,0.906308,-0.422618, 0,0.422618,0.906308, 0,0,0)
+spring_length = 5.0
+collision_mask = 1
+
+[node name="Camera3D" type="Camera3D" parent="CameraPivot/SpringArm3D"]
+fov = 75.0
+
+; HUD (instanced)
+[node name="HUD" parent="." instance=ExtResource("3_hud")]
+
+; Sounds
+[node name="SwingSound" type="AudioStreamPlayer3D" parent="."]
+stream = ExtResource("4_swing")
+volume_db = -5.0
+
+[node name="HitSound" type="AudioStreamPlayer3D" parent="."]
+stream = ExtResource("5_hit")
+volume_db = -2.0

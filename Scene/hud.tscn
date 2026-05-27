@@ -1,0 +1,228 @@
+; Medieval HUD Scene
+; Uses MediavelFree.png spritesheet for health/stamina bars
+; Designed to be instantiated as a CanvasLayer child of the Player
+
+[gd_scene format=3 uid="uid://hud_medieval_001"]
+
+[ext_resource type="Texture2D" path="res://Assets/MediavelFree.png/MediavelFree.png" id="1_ui_sheet"]
+
+; ── Bar sub-resources ─────────────────────────────────────────────────────────
+; TextureProgressBar uses tint_under (background) + tint_progress (fill)
+; We use the UI sheet as an atlas slice for a medieval look
+
+[sub_resource type="AtlasTexture" id="AtlasTex_hp_bg"]
+atlas = ExtResource("1_ui_sheet")
+; Full sheet — Godot will use it as-is tinted dark red
+region = Rect2(0, 0, 512, 512)
+
+[sub_resource type="AtlasTexture" id="AtlasTex_hp_fg"]
+atlas = ExtResource("1_ui_sheet")
+region = Rect2(0, 0, 512, 512)
+
+; ── Theme overrides via stylebox (medieval dark panel) ────────────────────────
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.08, 0.04, 0.02, 0.88)
+border_color = Color(0.6, 0.45, 0.15, 1.0)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_death"]
+bg_color = Color(0.0, 0.0, 0.0, 0.82)
+border_color = Color(0.8, 0.1, 0.1, 1.0)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+; ── Scene Tree ────────────────────────────────────────────────────────────────
+[node name="HUD" type="CanvasLayer"]
+
+; ── Bar Container (top-left corner) ──────────────────────────────────────────
+[node name="Bars" type="VBoxContainer" parent="."]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 18.0
+offset_right = 280.0
+offset_bottom = 80.0
+
+; Background panel for bars
+[node name="BarsPanel" type="Panel" parent="Bars"]
+layout_mode = 2
+custom_minimum_size = Vector2(260, 62)
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+; HP Label
+[node name="HPLabel" type="Label" parent="Bars/BarsPanel"]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 5.0
+offset_right = 50.0
+offset_bottom = 22.0
+text = "❤ HP"
+theme_override_colors/font_color = Color(0.95, 0.35, 0.3, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 12
+
+; HP Bar
+[node name="HPBar" type="ProgressBar" parent="Bars/BarsPanel"]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 22.0
+offset_right = 250.0
+offset_bottom = 40.0
+min_value = 0.0
+max_value = 100.0
+value = 100.0
+show_percentage = false
+theme_override_styles/fill = SubResource("StyleBoxFlat_panel")
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+
+; Stamina Label
+[node name="StamLabel" type="Label" parent="Bars/BarsPanel"]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 40.0
+offset_right = 80.0
+offset_bottom = 57.0
+text = "⚡ STM"
+theme_override_colors/font_color = Color(0.9, 0.85, 0.25, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 12
+
+; Stamina Bar
+[node name="StamBar" type="ProgressBar" parent="Bars/BarsPanel"]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 54.0
+offset_right = 250.0
+offset_bottom = 70.0
+min_value = 0.0
+max_value = 100.0
+value = 100.0
+show_percentage = false
+
+; ── Damage Flash (full-screen red overlay) ────────────────────────────────────
+[node name="DamageFlash" type="ColorRect" parent="."]
+layout_mode = 0
+anchor_left = 0.0
+anchor_right = 1.0
+anchor_top = 0.0
+anchor_bottom = 1.0
+color = Color(0.9, 0.05, 0.05, 0.0)
+mouse_filter = 2
+
+; ── Interact Hint Label (bottom center) ──────────────────────────────────────
+[node name="InteractLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = -200.0
+offset_top = -60.0
+offset_right = 200.0
+offset_bottom = -25.0
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_top = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "[E]  Interact"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.95, 0.85, 0.4, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 20
+visible = false
+
+; ── Hit Popup Label (center screen) ──────────────────────────────────────────
+[node name="HitLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = -100.0
+offset_top = -30.0
+offset_right = 100.0
+offset_bottom = 30.0
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_top = 0.45
+anchor_bottom = 0.45
+grow_horizontal = 2
+grow_vertical = 2
+text = "HIT!"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(1.0, 0.9, 0.1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 28
+visible = false
+
+; ── Controls Hint (bottom-right) ─────────────────────────────────────────────
+[node name="ControlsHint" type="Label" parent="."]
+layout_mode = 0
+offset_left = -220.0
+offset_top = -90.0
+offset_right = -10.0
+offset_bottom = -10.0
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_top = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 0
+grow_vertical = 0
+text = "WASD Move  |  LMB Attack
+Shift Run  |  Space Jump
+E Interact  |  Esc Menu"
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.65, 0.6, 0.5, 0.75)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.75)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 12
+
+; ── Death Panel (center, hidden until death) ──────────────────────────────────
+[node name="DeathPanel" type="Panel" parent="."]
+layout_mode = 0
+offset_left = -200.0
+offset_top = -100.0
+offset_right = 200.0
+offset_bottom = 100.0
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_top = 0.5
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_death")
+visible = false
+
+[node name="DeathTitle" type="Label" parent="DeathPanel"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 30.0
+offset_right = 400.0
+offset_bottom = 90.0
+anchor_right = 1.0
+horizontal_alignment = 1
+text = "☠  YOU DIED  ☠"
+theme_override_colors/font_color = Color(0.9, 0.15, 0.15, 1)
+theme_override_font_sizes/font_size = 36
+
+[node name="DeathSub" type="Label" parent="DeathPanel"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 110.0
+offset_right = 400.0
+offset_bottom = 150.0
+anchor_right = 1.0
+horizontal_alignment = 1
+text = "The dungeon claims another soul..."
+theme_override_colors/font_color = Color(0.7, 0.6, 0.6, 0.9)
+theme_override_font_sizes/font_size = 14
