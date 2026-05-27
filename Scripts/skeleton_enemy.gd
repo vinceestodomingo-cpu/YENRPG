@@ -294,11 +294,12 @@ func _set_anim(short_name: String, restart: bool = false) -> void:
 		if anim_player.has_animation(short_name):
 			full = short_name
 		else:
-			# Generic fallback: play any available anim if nothing running
-			if anim_player.current_animation == "" and anim_player.get_animation_list().size() > 0:
-				anim_player.play(anim_player.get_animation_list()[0])
 			return
 	if _current_anim == full and not restart:
 		return
 	_current_anim = full
-	anim_player.play(full)
+	if restart:
+		anim_player.stop()
+		anim_player.play(full, 0.2)
+	else:
+		anim_player.play(full, 0.2)

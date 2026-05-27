@@ -159,17 +159,21 @@ func _play_anim(short_name: String, restart: bool = false) -> void:
 	if not is_instance_valid(anim_player):
 		return
 	var key: String = short_name.to_lower()
-	var full_name: String = _anim_names.get(key, "")
-	if full_name == "":
+	var full: String = _anim_names.get(key, "")
+	if full == "":
 		# Try direct
 		if anim_player.has_animation(short_name):
-			full_name = short_name
+			full = short_name
 		else:
 			return
-	if _current_anim == full_name and not restart:
+	if _current_anim == full and not restart:
 		return
-	_current_anim = full_name
-	anim_player.play(full_name)
+	_current_anim = full
+	if restart:
+		anim_player.stop()
+		anim_player.play(full, 0.2)
+	else:
+		anim_player.play(full, 0.2)
 
 
 # ── Input ──────────────────────────────────────────────────────────────────────

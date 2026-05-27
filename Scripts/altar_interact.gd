@@ -42,25 +42,9 @@ func _on_body_exited(body: Node3D) -> void:
 				p.hide_interact_hint()
 
 func _trigger_random_effect() -> void:
-	var effect := randi() % 3
-	_interact_count += 1
-	print("[Altar] Interaction #%d triggered — effect %d" % [_interact_count, effect])
-
-	match effect:
-		0:
-			# Effect 1: Change player scale (toggle between tiny / normal / giant)
-			var scales := [Vector3(0.4, 0.4, 0.4), Vector3(1.0, 1.0, 1.0), Vector3(2.0, 2.0, 2.0)]
-			var new_scale: Vector3 = scales[_interact_count % 3]
-			_player_ref.scale = new_scale
-			print("[Altar] EFFECT — Scale changed! Player is now scale: %s" % str(new_scale))
-		1:
-			# Effect 2: Launch player upwards
-			var launch_strength: float = 15.0
-			_player_ref.velocity.y = launch_strength
-			print("[Altar] EFFECT — Player launched into the air! 🚀")
-		2:
-			# Effect 3: Print Victory message
-			print("╔══════════════════════════╗")
-			print("║       🏆 VICTORY! 🏆      ║")
-			print("╚══════════════════════════╝")
-			print("[Altar] EFFECT — Victory message printed!")
+	print("[Altar] Transitioning to Level 2!")
+	var next_level_path = "res://Scene/Level2.tscn"
+	if ResourceLoader.exists(next_level_path):
+		get_tree().change_scene_to_file(next_level_path)
+	else:
+		print("[Altar] ERROR: Level2.tscn not found! Re-run gen_levels.py")

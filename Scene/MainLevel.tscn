@@ -1,7 +1,6 @@
-; KayKit Dungeon Remastered — MainLevel (expanded 16x16, Knight player, medieval UI)
-; Player spawns at (2, 1, 2). Skeleton enemies patrol the room.
+; KayKit Dungeon Remastered — MainLevel
 
-[gd_scene format=3 uid="uid://main_level_001"]
+[gd_scene format=3 uid="uid://mainlevel_001"]
 
 ; === External Resources ===
 [ext_resource type="PackedScene" path="res://Assets/gltf/floor_tile_small.gltf" id="1_floortile"]
@@ -11,6 +10,8 @@
 [ext_resource type="Script" path="res://Scripts/altar_interact.gd" id="5_altarinteract"]
 [ext_resource type="PackedScene" path="res://Scene/skeleton_enemy.tscn" id="6_skeleton"]
 [ext_resource type="PackedScene" path="res://Scene/player.tscn" id="7_player"]
+[ext_resource type="PackedScene" path="res://Assets/gltf/wall_pillar.gltf" id="8_pillar"]
+[ext_resource type="PackedScene" path="res://Assets/gltf/torch_mounted.gltf" id="9_torch"]
 
 ; === Sub-resources ===
 [sub_resource type="SphereShape3D" id="SphereShape3D_interact"]
@@ -21,6 +22,9 @@ size = Vector3(16, 0.2, 16)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_chest"]
 size = Vector3(0.8, 0.8, 0.8)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_pillar"]
+size = Vector3(0.8, 4.0, 0.8)
 
 ; === SCENE TREE ===
 
@@ -44,30 +48,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, 2.5, 7.5)
 light_color = Color(1.0, 0.85, 0.6, 1)
 light_energy = 4.0
 omni_range = 20.0
-
-[node name="OmniLight_NW" type="OmniLight3D" parent="."]
-transform = Transform3D(1,0,0, 0,1,0, 0,0,1, 3,2.0,3)
-light_color = Color(0.9, 0.7, 1.0, 1)
-light_energy = 2.0
-omni_range = 8.0
-
-[node name="OmniLight_NE" type="OmniLight3D" parent="."]
-transform = Transform3D(1,0,0, 0,1,0, 0,0,1, 13,2.0,3)
-light_color = Color(0.9, 0.7, 1.0, 1)
-light_energy = 2.0
-omni_range = 8.0
-
-[node name="OmniLight_SE" type="OmniLight3D" parent="."]
-transform = Transform3D(1,0,0, 0,1,0, 0,0,1, 13,2.0,13)
-light_color = Color(0.9, 0.7, 1.0, 1)
-light_energy = 2.0
-omni_range = 8.0
-
-[node name="OmniLight_SW" type="OmniLight3D" parent="."]
-transform = Transform3D(1,0,0, 0,1,0, 0,0,1, 3,2.0,13)
-light_color = Color(0.9, 0.7, 1.0, 1)
-light_energy = 2.0
-omni_range = 8.0
 
 ; --- Floor tiles: 16x16 grid ---
 [node name="Floor" type="Node3D" parent="."]
@@ -734,35 +714,36 @@ transform = Transform3D(-1,0,0, 0,1,0, 0,0,-1, 15.5,0,15.5)
 [node name="Corner_NW" parent="Walls" instance=ExtResource("3_wallcorner")]
 transform = Transform3D(0,0,1, 0,1,0, -1,0,0, -0.5,0,15.5)
 
-; --- Center Prop: KayKit Chest ---
-[node name="CentralAltar" type="StaticBody3D" parent="."]
+; --- Pillars ---
+[node name="Pillars" type="Node3D" parent="."]
+
+; --- Props ---
+[node name="Props" type="Node3D" parent="."]
+
+[node name="Chest_0" type="StaticBody3D" parent="Props"]
 transform = Transform3D(1,0,0, 0,1,0, 0,0,1, 7.5,0,7.5)
-
-[node name="ChestMesh" parent="CentralAltar" instance=ExtResource("4_chest")]
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="CentralAltar"]
+[node name="Mesh" parent="Props/Chest_0" instance=ExtResource("4_chest")]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Props/Chest_0"]
 shape = SubResource("BoxShape3D_chest")
-
-[node name="InteractionZone" type="Area3D" parent="CentralAltar"]
+[node name="InteractionZone" type="Area3D" parent="Props/Chest_0"]
 script = ExtResource("5_altarinteract")
-
-[node name="InteractShape" type="CollisionShape3D" parent="CentralAltar/InteractionZone"]
+[node name="InteractShape" type="CollisionShape3D" parent="Props/Chest_0/InteractionZone"]
 shape = SubResource("SphereShape3D_interact")
 
 ; --- Skeleton Enemies ---
 [node name="Enemies" type="Node3D" parent="."]
 
 [node name="Skeleton_1" parent="Enemies" instance=ExtResource("6_skeleton")]
-transform = Transform3D(1,0,0, 0,1,0, 0,0,1, 3.5,0,3.5)
+transform = Transform3D(1,0,0, 0,1,0, 0,0,1, 12,0,11)
 
 [node name="Skeleton_2" parent="Enemies" instance=ExtResource("6_skeleton")]
-transform = Transform3D(1,0,0, 0,1,0, 0,0,1, 12.5,0,3.5)
+transform = Transform3D(1,0,0, 0,1,0, 0,0,1, 12,0,13)
 
 [node name="Skeleton_3" parent="Enemies" instance=ExtResource("6_skeleton")]
-transform = Transform3D(1,0,0, 0,1,0, 0,0,1, 3.5,0,12.5)
+transform = Transform3D(1,0,0, 0,1,0, 0,0,1, 3,0,4)
 
 [node name="Skeleton_4" parent="Enemies" instance=ExtResource("6_skeleton")]
-transform = Transform3D(1,0,0, 0,1,0, 0,0,1, 12.5,0,12.5)
+transform = Transform3D(1,0,0, 0,1,0, 0,0,1, 4,0,13)
 
 ; --- Player (instanced from player.tscn) ---
 [node name="Player" parent="." instance=ExtResource("7_player")]
