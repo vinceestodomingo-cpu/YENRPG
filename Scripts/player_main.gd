@@ -21,7 +21,7 @@ extends CharacterBody3D
 @export_group("Combat")
 @export var max_health: float = 100.0
 @export var max_stamina: float = 100.0
-@export var attack_damage: float = 25.0
+@export var attack_damage: float = 50.0
 @export var attack_range: float = 2.2
 @export var attack_cooldown: float = 0.9
 @export var attack_hit_window_start: float = 0.25  # seconds into swing when hit registers
@@ -89,17 +89,37 @@ func _ready() -> void:
 	death_panel.visible = false
 	hit_label.visible = false
 
-	# Find AnimationPlayer anywhere inside ModelRoot (GLB import path varies)
-	anim_player = _find_anim_player(model_root)
-	if anim_player:
-		print("[Player] Found AnimationPlayer at: ", anim_player.get_path())
+	# Find AnimationPlayer
+	if model_root:
+		anim_player = _find_anim_player(model_root)
+	if not anim_player:
+		print("[Player] WARNING: No AnimationPlayer found in ModelRoot")
 	else:
-		push_warning("[Player] No AnimationPlayer found in ModelRoot! Animations disabled.")
-
-	# Discover animations available in the AnimationPlayer
-	_discover_animations()
+		_load_external_animations()
+		_discover_animations()
 	_play_anim("Idle")
 
+
+func _load_external_animations() -> void:
+	if not anim_player:
+		return
+	var anim_paths: Array[String] = [
+		"res://Assets/KayKit_Adventurers_2.0_FREE/Animations/gltf/Rig_Medium/Rig_Medium_General.glb",
+		"res://Assets/KayKit_Adventurers_2.0_FREE/Animations/gltf/Rig_Medium/Rig_Medium_MovementBasic.glb"
+	]
+	var lib_idx: int = 0
+	for path in anim_paths:
+		if ResourceLoader.exists(path):
+			var scene: PackedScene = load(path)
+			if scene:
+				var instance: Node = scene.instantiate()
+				var ext_player: AnimationPlayer = _find_anim_player(instance)
+				if ext_player:
+					var lib: AnimationLibrary = ext_player.get_animation_library("")
+					if lib:
+						anim_player.add_animation_library("ext_%d" % lib_idx, lib)
+						lib_idx += 1
+				instance.queue_free()
 
 
 func _find_anim_player(root: Node) -> AnimationPlayer:
@@ -113,17 +133,14 @@ func _find_anim_player(root: Node) -> AnimationPlayer:
 
 
 func _discover_animations() -> void:
-	if not is_instance_valid(anim_player):
+	if not anim_player:
 		return
 	var anim_list: PackedStringArray = anim_player.get_animation_list()
-	# Build a map: lowercase short name → full anim name in player
-	# KayKit GLBs typically name anims like "Armature|Walk" or "mixamo_walk" etc.
-	var wanted: Array[String] = ["Idle", "Walk", "Run", "Attack", "Jump", "Death", "Hit", "Sword_Attack"]
+	var wanted: Array[String] = ["Idle", "Walk", "Run", "Attack", "Death", "Hit"]
 	for w: String in wanted:
 		var wl: String = w.to_lower()
 		for a: String in anim_list:
-			var al: String = a.to_lower()
-			if al.contains(wl):
+			if a.to_lower().contains(wl):
 				_anim_names[wl] = a
 				break
 		# Fallback: exact match first chars

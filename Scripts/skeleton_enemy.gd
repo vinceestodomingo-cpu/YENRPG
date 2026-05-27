@@ -10,7 +10,7 @@ extends CharacterBody3D
 @export var max_health: float = 60.0
 @export var move_speed: float = 2.5
 @export var chase_speed: float = 4.0
-@export var attack_damage: float = 10.0
+@export var attack_damage: float = 3.0
 @export var attack_cooldown: float = 1.5
 @export var attack_range: float = 1.4
 @export var detection_range: float = 8.0
@@ -27,6 +27,7 @@ var _patrol_target: Vector3
 var _patrol_origin: Vector3
 var _attack_timer: float = 0.0
 var _idle_timer: float = 0.0
+var hp_label: Label3D
 
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
@@ -46,7 +47,15 @@ func _ready() -> void:
 	add_to_group("Enemy")
 	_health = max_health
 	_patrol_origin = global_position
-	_idle_timer = randf_range(0.5, 2.0)  # stagger start so not all move at once
+	
+	hp_label = Label3D.new()
+	hp_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	hp_label.text = "HP: %d/%d" % [int(_health), int(max_health)]
+	hp_label.position = Vector3(0, 2.3, 0)
+	hp_label.font_size = 72
+	hp_label.outline_size = 12
+	hp_label.modulate = Color(1.0, 0.3, 0.3)
+	add_child(hp_label)
 
 	detection_area.body_entered.connect(_on_body_entered)
 	detection_area.body_exited.connect(_on_body_exited)
@@ -60,9 +69,31 @@ func _ready() -> void:
 
 	if anim_player:
 		print("[Skeleton] AnimationPlayer found at: ", anim_player.get_path())
+		_load_external_animations()
 		_discover_animations()
 	else:
 		push_warning("[Skeleton] No AnimationPlayer found — anims disabled.")
+
+func _load_external_animations() -> void:
+	if not anim_player:
+		return
+	var anim_paths: Array[String] = [
+		"res://Assets/KayKit_Skeletons_1.1_FREE/animations/gltf/Rig_Medium/Rig_Medium_General.glb",
+		"res://Assets/KayKit_Skeletons_1.1_FREE/animations/gltf/Rig_Medium/Rig_Medium_MovementBasic.glb"
+	]
+	var lib_idx: int = 0
+	for path in anim_paths:
+		if ResourceLoader.exists(path):
+			var scene: PackedScene = load(path)
+			if scene:
+				var instance: Node = scene.instantiate()
+				var ext_player: AnimationPlayer = _find_anim_player(instance)
+				if ext_player:
+					var lib: AnimationLibrary = ext_player.get_animation_library("")
+					if lib:
+						anim_player.add_animation_library("ext_%d" % lib_idx, lib)
+						lib_idx += 1
+				instance.queue_free()
 
 	_set_anim("Idle")
 	print("[Skeleton] Ready at %s" % str(global_position))
@@ -204,6 +235,7 @@ func take_damage(amount: float) -> void:
 	if _state == State.DEAD:
 		return
 	_health -= amount
+	hp_label.text = "HP: %d/%d" % [max(0, int(_health)), int(max_health)]
 	print("[Skeleton] Took %d dmg → %d / %d HP" % [int(amount), int(_health), int(max_health)])
 	_change_state(State.CHASE)
 	if _health <= 0.0:
@@ -212,6 +244,7 @@ func take_damage(amount: float) -> void:
 
 func _die() -> void:
 	_change_state(State.DEAD)
+	hp_label.visible = false
 	print("[Skeleton] Defeated!")
 	emit_signal("died", self)
 	_set_anim("Death", true)
