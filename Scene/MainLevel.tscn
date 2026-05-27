@@ -26,6 +26,12 @@ size = Vector3(0.8, 0.8, 0.8)
 [sub_resource type="BoxShape3D" id="BoxShape3D_pillar"]
 size = Vector3(0.8, 4.0, 0.8)
 
+[sub_resource type="BoxShape3D" id="BoxShape3D_wall_NS"]
+size = Vector3(16, 4.0, 1.0)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wall_EW"]
+size = Vector3(1.0, 4.0, 16)
+
 ; === SCENE TREE ===
 
 [node name="MainLevel" type="Node3D"]
@@ -714,6 +720,21 @@ transform = Transform3D(-1,0,0, 0,1,0, 0,0,-1, 15.5,0,15.5)
 [node name="Corner_NW" parent="Walls" instance=ExtResource("3_wallcorner")]
 transform = Transform3D(0,0,1, 0,1,0, -1,0,0, -0.5,0,15.5)
 
+; --- Invisible Boundary Collisions ---
+[node name="BoundaryCollisions" type="StaticBody3D" parent="Walls"]
+[node name="Shape_N" type="CollisionShape3D" parent="Walls/BoundaryCollisions"]
+transform = Transform3D(1,0,0, 0,1,0, 0,0,1, 7.5,2.0,15.5)
+shape = SubResource("BoxShape3D_wall_NS")
+[node name="Shape_S" type="CollisionShape3D" parent="Walls/BoundaryCollisions"]
+transform = Transform3D(1,0,0, 0,1,0, 0,0,1, 7.5,2.0,-0.5)
+shape = SubResource("BoxShape3D_wall_NS")
+[node name="Shape_W" type="CollisionShape3D" parent="Walls/BoundaryCollisions"]
+transform = Transform3D(1,0,0, 0,1,0, 0,0,1, -0.5,2.0,7.25)
+shape = SubResource("BoxShape3D_wall_EW")
+[node name="Shape_E" type="CollisionShape3D" parent="Walls/BoundaryCollisions"]
+transform = Transform3D(1,0,0, 0,1,0, 0,0,1, 15.5,2.0,7.25)
+shape = SubResource("BoxShape3D_wall_EW")
+
 ; --- Pillars ---
 [node name="Pillars" type="Node3D" parent="."]
 
@@ -734,16 +755,16 @@ shape = SubResource("SphereShape3D_interact")
 [node name="Enemies" type="Node3D" parent="."]
 
 [node name="Skeleton_1" parent="Enemies" instance=ExtResource("6_skeleton")]
-transform = Transform3D(1,0,0, 0,1,0, 0,0,1, 12,0,11)
+transform = Transform3D(1,0,0, 0,1,0, 0,0,1, 4,0,11)
 
 [node name="Skeleton_2" parent="Enemies" instance=ExtResource("6_skeleton")]
-transform = Transform3D(1,0,0, 0,1,0, 0,0,1, 12,0,13)
+transform = Transform3D(1,0,0, 0,1,0, 0,0,1, 6,0,6)
 
 [node name="Skeleton_3" parent="Enemies" instance=ExtResource("6_skeleton")]
-transform = Transform3D(1,0,0, 0,1,0, 0,0,1, 3,0,4)
+transform = Transform3D(1,0,0, 0,1,0, 0,0,1, 11,0,2)
 
 [node name="Skeleton_4" parent="Enemies" instance=ExtResource("6_skeleton")]
-transform = Transform3D(1,0,0, 0,1,0, 0,0,1, 4,0,13)
+transform = Transform3D(1,0,0, 0,1,0, 0,0,1, 10,0,3)
 
 ; --- Player (instanced from player.tscn) ---
 [node name="Player" parent="." instance=ExtResource("7_player")]
